@@ -15,7 +15,7 @@ public class PaintBox extends Applet implements MouseMotionListener {
 	}
 	public void paint(Graphics g) {
 		graphic = g.create();
-		this.setSize(new Dimension(500,500));
+		this.setSize(new Dimension(1000,700));
 	}
 	
 	public void drawCircle(int x, int y, int width) {

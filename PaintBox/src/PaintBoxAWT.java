@@ -1,66 +1,95 @@
-import javax.swing.*;
-
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Panel;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
+import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 
-
-public class PaintBoxAWT extends JFrame implements MouseMotionListener{
-	private Graphics graphic;
-	private boolean toSquare = false;
-	private int x,y;
+public class PaintBoxAWT extends JComponent {
+	private Image image;
+	public boolean big = false;
+	public boolean eraseMode = false;
+	private Graphics2D g;
+	private int currentX, currentY, oldX, oldY;
 	
-	public void paint(Graphics g) {
-		super.paint(g);
-		if (toSquare) {
-			graphic.fillRect(x, y, 20,20);
-			graphic.setColor(getColor());
-		}
-		else {
-			graphic.fillOval(x, y, 20, 20);
-			graphic.setColor(getColor());
-		}
-	}
-	
-	public Color getColor() {
-		int r = (int) Math.random() *256;
-		int b = (int) Math.random() *256;
-		int g = (int) Math.random() *256;
+	public PaintBoxAWT() {
+		setDoubleBuffered(false);
+		addMouseListener(new MouseAdapter() {
+			public void mousePressed(MouseEvent e) {
+				oldX = e.getX();
+				oldY = e.getY();
+			}
+		});
 		
-		return (new Color(r,g,b));
+		addMouseMotionListener(new MouseMotionAdapter() {
+			public void mouseDragged(MouseEvent e) {
+				currentX = e.getX();
+				currentY = e.getY();
+				
+				if (g != null) {
+					if (big) {
+						g.setStroke(new BasicStroke(5));
+						g.drawLine(oldX, oldY, currentX, currentY);
+						repaint();
+						oldX = currentX;
+						oldY = currentY;
+					}
+					else {
+						g.setStroke(new BasicStroke());
+						g.drawLine(oldX, oldY, currentX, currentY);
+						repaint();
+						
+						oldX = currentX;
+						oldY = currentY;
+					}
+				}
+			}
+		});
 	}
-
-	@Override
-	public void mouseDragged(MouseEvent e) {
-		// TODO Auto-generated method stub
-		x = e.getX();
-		y = e.getY();
-		if (e.isShiftDown()) {
-			toSquare = true;
+	
+	public void paintComponent(Graphics g) {
+		if (image == null) {
+			image = createImage(getSize().width, getSize().height);
+			this.g = (Graphics2D) image.getGraphics();
+			this.g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			clear();
 		}
-		else {
-			toSquare = false;
-		}
+		
+		g.drawImage(image, 0, 0, null);
+	}
+	
+	public void clear() {
+		g.setPaint(Color.WHITE);
+		g.fillRect(0, 0, getSize().width, getSize().height);
+		g.setPaint(Color.BLACK);
 		repaint();
 	}
-	
-	public static void main(String[] args) {
-		JFrame frame = new JFrame("Paint Box!");
-		JPanel panel = new JPanel();
-		panel.addMouseMotionListener(new PaintBoxAWT());
-		frame.add(panel);
-		frame.setSize(500, 500);
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
-		frame.setResizable(true);
+	public void normal() {
+		g.setPaint(Color.BLACK);
 	}
-
-	@Override
-	public void mouseMoved(MouseEvent arg0) {
-		// TODO Auto-generated method stub
+	public void erase() {
+		g.setPaint(Color.white);
+	}
+	public void save() {
+		String filename = JOptionPane.showInputDialog("What do you want the file to be named?");
+		BufferedImage b = new BufferedImage(image.getWidth(null),image.getHeight(null),BufferedImage.TYPE_INT_RGB);
+		Graphics bGraphics = b.getGraphics();
+		bGraphics.drawImage(image, 0, 0, null);
+		try {
+			ImageIO.write(b, "PNG", new File(filename));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
 	}
 }
